@@ -37,7 +37,7 @@ export function activate(context: vscode.ExtensionContext) {
 			if (event == "select") {
 				vimBookMarkMg.goTo(val.label)
 			}
-		})
+		}, { placehoder: "输入n新增,其他跳转" })
 
 
 		// 这里设置items要放在和show一个层级，不能放在callback，否则list还是空的
@@ -89,7 +89,7 @@ class VimBookMark {
 		let pos = getCursorPosition(textEdit)
 		this.data = {
 			id: id,
-			label: `${id}->${pos.filePath}:${pos.lineNum}`,
+			label: `${id}->${pos.relativePath}:${pos.lineNum}`,
 			pos: pos,
 		}
 	}
@@ -169,16 +169,36 @@ function goToLocation(filePath: string, lineNum: number, charNum: number, msg: s
 }
 
 type PosType = {
+	relativePath: string
 	filePath: string
 	lineNum: number
 	charNum: number
 }
 
+function formatPath(filePath?: string) {
+	if (!filePath) { return "" }
+	return filePath.replace(/\\/g, "/")
+}
+
+class Str extends String {
+	ltrim(limit: string) {
+		if (this.substring(0, limit.length) == limit) {
+			return this.substring(limit.length)
+		}
+		return this
+	}
+}
+
 // 获取当前光标所在位置
 function getCursorPosition(textEdit: vscode.TextEditor): PosType {
+	let workspaceRootPath = formatPath(vscode.workspace.getWorkspaceFolder(textEdit.document.uri)?.uri.path)
+	let filePath = formatPath(textEdit.document.fileName)
 	let ac = textEdit.selection.active
+	let relativePath = new Str(filePath.replace(workspaceRootPath, "")).ltrim("/").toString()
+
 	return {
-		filePath: textEdit.document.fileName,
+		relativePath: relativePath,
+		filePath: filePath,
 		lineNum: ac.line,
 		charNum: ac.character
 	}
