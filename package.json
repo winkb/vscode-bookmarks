@@ -2,6 +2,7 @@
 	"name": "vimbookmark",
 	"displayName": "vimbookmark",
 	"description": "更适合vim的Mark功能。",
+	"repository": "https://gitee.com/myhome123456/vscode-vimbookmark",
 	"version": "0.0.1",
 	"engines": {
 		"vscode": "^1.67.0"
