@@ -151,7 +151,12 @@ class VimBookMark {
 
 	get label() {
 		let { id, pos, desc } = this.data
-		return `${id}->${desc ? desc : pos.relativePath}:${pos.lineNum}`
+		if (desc) {
+			desc = desc + ":"
+		} else {
+			desc = ""
+		}
+		return `${id}->${desc + pos.relativePath}:${pos.lineNum}`
 	}
 
 	getInfo() {
