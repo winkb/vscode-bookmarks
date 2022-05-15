@@ -2,47 +2,35 @@ import * as vscode from 'vscode';
 
 
 export function activate(context: vscode.ExtensionContext) {
-
-
 	let vimBookMarkMg = new VimBookMarkManager()
+	let quickMarkTrigger = QuickBase.create({ placehoder: "输入n新增,其他跳转" })
+	let quickMarkEditor = QuickBase.create({ placehoder: "请输入mark name" })
 
-	let disposable = vscode.commands.registerTextEditorCommand('bo.vimBookMark', (textEdit, ed) => {
-
-		let addNewMarkHandle: quickCallbackInterface = function (ev, val) {
-			if (ev == "changeValue" && val.trim()) {
-				vimBookMarkMg.add(new VimBookMark(String(val), textEdit))
-			}
-		}
-
-		let theQuick = QuickMarkTrigger.create(function (event, val) {
-
-			console.log("@ -> file: extension.ts -> line 11 -> theQuick -> val", val);
-
-			if (event == "changeValue") {
-				if (val.trim() == "") {
-					return
-				}
-
-				// 当输入 `n` 的时候，就新增一个mark，其他字符是跳转到对应的mark
-				if (val == "n") {
-					QuickMarkEditor.create(function (ev, val) {
-						addNewMarkHandle(ev, val)
-					}, { placehoder: "请输入mark name" }).show()
+	let disposable = vscode.commands.registerTextEditorCommand('bo.vimBookMark', (textEdit) => {
+		quickMarkTrigger.setHandle({
+			changeValue(char) {
+				// 输入n，新增mark
+				if (char == "n") {
+					quickMarkEditor.setHandle({
+						changeValue(id) {
+							if (id.charAt(0) != "n") {
+								vimBookMarkMg.add(new VimBookMark(id, textEdit))
+							} else {
+								vscode.window.setStatusBarMessage("不能使用n作为标记ID", 2000)
+							}
+						}
+					}).show()
 				} else {
-					vimBookMarkMg.goTo(val)
+					// 跳转 mark
+					vimBookMarkMg.goTo(char)
 				}
-			}
-
-
-			if (event == "select") {
+			},
+			select(val) {
 				vimBookMarkMg.goTo(val.label)
 			}
-		}, { placehoder: "输入n新增,其他跳转" })
+		})
 
-
-		// 这里设置items要放在和show一个层级，不能放在callback，否则list还是空的
-		theQuick.items = vimBookMarkMg.getQuickPick()
-		theQuick.show()
+		quickMarkTrigger.show(vimBookMarkMg.getQuickPick())
 	});
 
 	context.subscriptions.push(disposable);
@@ -109,52 +97,57 @@ class VimBookMark {
 
 }
 
-type quickEvent = "changeValue" | "select"
-interface quickCallbackInterface {
-	(ev: quickEvent, val: any): void
+type quickCallbackType = {
+	changeValue?(val: string): void
+	select?(val: any): void
 }
 
 class QuickBase {
-	static qui: vscode.QuickPick<any>
+	qui: vscode.QuickPick<any>
 
-	static create(callback: quickCallbackInterface, option?: { placehoder: string }) {
-		if (!this.qui) {
-			let config = {
-				placehoder: ""
-			}
-			config = Object.assign(config, option)
-			this.qui = vscode.window.createQuickPick()
-			this.qui.placeholder = config.placehoder
-			this.qui.items = []
-
-			console.log("@ -> file: extension.ts -> line 125 -> new this.qui");
+	constructor(option?: { placehoder: string }) {
+		let config = {
+			placehoder: ""
 		}
+		config = Object.assign(config, option)
 
+		console.log("@ -> file: extension.ts -> line 125 -> new this.qui");
+		this.qui = vscode.window.createQuickPick()
+		this.qui.placeholder = config.placehoder
+		this.qui.items = []
+	}
+
+	setHandle(callback: quickCallbackType) {
 		this.qui.onDidChangeSelection((e) => {
-			callback("select", e)
+			callback.select && callback.select(e)
 			this.qui.value = ""
 			this.qui.hide()
 		})
 
 		this.qui.onDidChangeValue((e) => {
-			callback("changeValue", e)
+			e = e.trim()
+			callback.changeValue && e && callback.changeValue(e)
 			this.qui.value = ""
 			this.qui.hide()
 		})
 
-		return this.qui
+		return this
+	}
+
+	show(list?: any[]) {
+		// 这里设置items要放在和show一个层级，不能放在callback，否则list还是空的
+		if (list) {
+			this.qui.items = list
+		}
+		this.qui.show()
+	}
+
+	static create(option?: { placehoder: string }) {
+		let ins = new this(option)
+		return ins
 	}
 }
 
-class QuickMarkEditor extends QuickBase {
-	// 必须重写，否则还是父对象的属性地址
-	static qui: vscode.QuickPick<any>
-}
-
-class QuickMarkTrigger extends QuickBase {
-	// 必须重写，否则还是父对象的属性地址
-	static qui: vscode.QuickPick<any>
-}
 
 // 创建quickPick单例，如果已经创建了，直接返回
 function goToLocation(filePath: string, lineNum: number, charNum: number, msg: string = "") {
