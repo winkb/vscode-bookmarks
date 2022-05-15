@@ -1,25 +1,64 @@
 import * as vscode from 'vscode';
 
+interface ChangeValueHandle {
+	(val: string): void
+}
+
+type quickCallbackType = {
+	changeValue?(val: string): void
+	select?(val: any): void
+}
+
+type QuickPickOptionType = {
+	placehoder: string
+	charLimit?: number
+}
+
 
 export function activate(context: vscode.ExtensionContext) {
 	let vimBookMarkMg = new VimBookMarkManager()
-	let quickMarkTrigger = QuickBase.create({ placehoder: "输入n新增,其他跳转" })
-	let quickMarkEditor = QuickBase.create({ placehoder: "请输入mark name" })
+	let quickMarkTrigger = QuickBase.create({ placehoder: "输入n新增,其他跳转", charLimit: 1 })
+	let quickMarkEditor = QuickBase.create({ placehoder: "请输入mark name", charLimit: 1 })
+	let quickMarkDesc = QuickBase.create({ placehoder: "请输入备忘描述" })
 
 	let disposable = vscode.commands.registerTextEditorCommand('bo.vimBookMark', (textEdit) => {
+		let specialKeys: {
+			["c"]: ChangeValueHandle,
+			["n"]: ChangeValueHandle
+		} = {
+			"n": () => {
+				quickMarkEditor.setHandle({
+					changeValue(id) {
+						let sKeys: any = specialKeys
+						if (sKeys[id.charAt(0)]) {
+							vscode.window.setStatusBarMessage(`不能使用${id}作为标记ID`, 2000)
+						} else {
+							vimBookMarkMg.add(new VimBookMark(id, textEdit))
+						}
+					}
+				}).show()
+			},
+			"c": () => {
+				quickMarkDesc.setHandle({
+					changeValue(desc) {
+						let find = vimBookMarkMg.get(textEdit)
+						if (find) {
+							find.setDesc(desc)
+							vimBookMarkMg.update(find)
+						} else {
+							vscode.window.setStatusBarMessage("此行没有标记", 2000)
+						}
+					}
+				}).show()
+			}
+		}
+
 		quickMarkTrigger.setHandle({
 			changeValue(char) {
-				// 输入n，新增mark
-				if (char == "n") {
-					quickMarkEditor.setHandle({
-						changeValue(id) {
-							if (id.charAt(0) != "n") {
-								vimBookMarkMg.add(new VimBookMark(id, textEdit))
-							} else {
-								vscode.window.setStatusBarMessage("不能使用n作为标记ID", 2000)
-							}
-						}
-					}).show()
+				let obj: any = specialKeys
+				let h = obj[char]
+				if (h) {
+					h(char)
 				} else {
 					// 跳转 mark
 					vimBookMarkMg.goTo(char)
@@ -46,6 +85,22 @@ class VimBookMarkManager {
 		this.push(mark)
 	}
 
+	get(textEd: vscode.TextEditor) {
+		let pos = getCursorPosition(textEd)
+		return this.list.find(v => {
+			return v.data.pos.filePath == pos.filePath && v.data.pos.lineNum == pos.lineNum
+		})
+	}
+
+	update(mark: VimBookMark) {
+		this.list = this.list.map(v => {
+			if (v.id == mark.id) {
+				return mark
+			}
+			return v
+		})
+	}
+
 	getQuickPick() {
 		return this.list.map(v => v.getInfo())
 	}
@@ -69,7 +124,7 @@ class VimBookMarkManager {
 class VimBookMark {
 	data: {
 		id: string
-		label: string
+		desc?: string
 		pos: PosType
 	}
 
@@ -77,7 +132,6 @@ class VimBookMark {
 		let pos = getCursorPosition(textEdit)
 		this.data = {
 			id: id,
-			label: `${id}->${pos.relativePath}:${pos.lineNum}`,
 			pos: pos,
 		}
 	}
@@ -87,33 +141,45 @@ class VimBookMark {
 		goToLocation(filePath, lineNum, charNum)
 	}
 
+	setDesc(desc: string) {
+		this.data.desc = desc
+	}
+
 	get id() {
 		return this.data.id
 	}
 
+	get label() {
+		let { id, pos, desc } = this.data
+		return `${id}->${desc ? desc : pos.relativePath}:${pos.lineNum}`
+	}
+
 	getInfo() {
-		return this.data
+		let { id, pos } = this.data
+		return {
+			id,
+			label: this.label,
+			pos
+		}
 	}
 
 }
 
-type quickCallbackType = {
-	changeValue?(val: string): void
-	select?(val: any): void
-}
-
 class QuickBase {
 	qui: vscode.QuickPick<any>
+	charLimit = 0
 
-	constructor(option?: { placehoder: string }) {
+	constructor(option?: QuickPickOptionType) {
 		let config = {
-			placehoder: ""
+			placehoder: "",
+			charLimit: 0,
 		}
 		config = Object.assign(config, option)
 
 		console.log("@ -> file: extension.ts -> line 125 -> new this.qui");
 		this.qui = vscode.window.createQuickPick()
 		this.qui.placeholder = config.placehoder
+		this.charLimit = config.charLimit
 		this.qui.items = []
 	}
 
@@ -126,8 +192,18 @@ class QuickBase {
 
 		this.qui.onDidChangeValue((e) => {
 			e = e.trim()
-			callback.changeValue && e && callback.changeValue(e)
-			this.qui.value = ""
+			if (this.charLimit && e.length >= this.charLimit) {
+				callback.changeValue && e && callback.changeValue(e)
+				this.qui.value = ""
+				this.qui.hide()
+			}
+		})
+
+		this.qui.onDidAccept(() => {
+			if (this.qui.value.trim()) {
+				callback.changeValue && callback.changeValue(this.qui.value)
+			}
+			this.qui.value = " "
 			this.qui.hide()
 		})
 
@@ -142,7 +218,7 @@ class QuickBase {
 		this.qui.show()
 	}
 
-	static create(option?: { placehoder: string }) {
+	static create(option?: QuickPickOptionType) {
 		let ins = new this(option)
 		return ins
 	}
