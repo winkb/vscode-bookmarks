@@ -1,13 +1,19 @@
 import * as vscode from 'vscode';
+import { Decoration } from './decoration';
 
 
 export function activate(context: vscode.ExtensionContext) {
 	let vimBookMarkMg = new VimBookMarkManager()
+	let decration = new Decoration()
 
 	let disposable = vscode.commands.registerTextEditorCommand('bo.vimBookMarkTrigger', (textEdit) => {
 		let quickMarkTrigger = QuickBase.create({ placehoder: "输入n新增,其他跳转", charLimit: 1 })
 		let quickMarkEditor = QuickBase.create({ placehoder: "请输入mark name", charLimit: 1 })
 		let quickMarkDesc = QuickBase.create({ placehoder: "请输入备忘描述" })
+
+		let curPos = getCursorPosition(textEdit)
+		// 设置一个装饰符测试
+		decration.setDecorations(textEdit, "a", [new vscode.Range(new vscode.Position(curPos.lineNum, 0), new vscode.Position(curPos.lineNum, curPos.charNum + 1))])
 
 		let specialKeys: {
 			["n"]: ChangeValueHandle
