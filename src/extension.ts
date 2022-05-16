@@ -1,20 +1,5 @@
 import * as vscode from 'vscode';
 
-interface ChangeValueHandle {
-	(val: string): void
-}
-
-type quickCallbackType = {
-	changeValue?(val: string): void
-	select?(val: any): void
-	accpet?(val: any): void
-}
-
-type QuickPickOptionType = {
-	placehoder: string
-	charLimit?: number
-}
-
 
 export function activate(context: vscode.ExtensionContext) {
 	let vimBookMarkMg = new VimBookMarkManager()
@@ -256,13 +241,6 @@ function goToLocation(filePath: string, lineNum: number, charNum: number, msg: s
 		'goto', // mode
 		msg // <- message
 	);
-}
-
-type PosType = {
-	relativePath: string
-	filePath: string
-	lineNum: number
-	charNum: number
 }
 
 function formatPath(filePath?: string) {
