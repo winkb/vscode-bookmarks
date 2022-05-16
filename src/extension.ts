@@ -17,13 +17,13 @@ type QuickPickOptionType = {
 
 export function activate(context: vscode.ExtensionContext) {
 	let vimBookMarkMg = new VimBookMarkManager()
-	let quickMarkTrigger = QuickBase.create({ placehoder: "输入n新增,其他跳转", charLimit: 1 })
-	let quickMarkEditor = QuickBase.create({ placehoder: "请输入mark name", charLimit: 1 })
-	let quickMarkDesc = QuickBase.create({ placehoder: "请输入备忘描述" })
 
-	let disposable = vscode.commands.registerTextEditorCommand('bo.vimBookMark', (textEdit) => {
+	let disposable = vscode.commands.registerTextEditorCommand('bo.vimBookMarkTrigger', (textEdit) => {
+		let quickMarkTrigger = QuickBase.create({ placehoder: "输入n新增,其他跳转", charLimit: 1 })
+		let quickMarkEditor = QuickBase.create({ placehoder: "请输入mark name", charLimit: 1 })
+		let quickMarkDesc = QuickBase.create({ placehoder: "请输入备忘描述" })
+
 		let specialKeys: {
-			["c"]: ChangeValueHandle,
 			["n"]: ChangeValueHandle
 		} = {
 			"n": () => {
@@ -33,24 +33,15 @@ export function activate(context: vscode.ExtensionContext) {
 						if (sKeys[id.charAt(0)]) {
 							vscode.window.setStatusBarMessage(`不能使用${id}作为标记ID`, 2000)
 						} else {
-							vimBookMarkMg.add(new VimBookMark(id, textEdit))
+							quickMarkDesc.setHandle({
+								changeValue(desc) {
+									vimBookMarkMg.add(new VimBookMark(id, textEdit, desc))
+								}
+							}).show()
 						}
 					}
 				}).show()
 			},
-			"c": () => {
-				quickMarkDesc.setHandle({
-					changeValue(desc) {
-						let find = vimBookMarkMg.get(textEdit)
-						if (find) {
-							find.setDesc(desc)
-							vimBookMarkMg.update(find)
-						} else {
-							vscode.window.setStatusBarMessage("此行没有标记", 2000)
-						}
-					}
-				}).show()
-			}
 		}
 
 		quickMarkTrigger.setHandle({
@@ -72,13 +63,41 @@ export function activate(context: vscode.ExtensionContext) {
 		quickMarkTrigger.show(vimBookMarkMg.getQuickPick())
 	});
 
+
+	let disposableClarBookMark = vscode.commands.registerTextEditorCommand('bo.vimBookMarkClear', (textEdit) => {
+		vimBookMarkMg.clear()
+	});
+
+	context.subscriptions.push(disposableClarBookMark);
+
 	context.subscriptions.push(disposable);
 }
 
 class VimBookMarkManager {
 	list: VimBookMark[] = []
 
+	constructor() {
+		let list: VimBookMark[] = []
+		let save = this.save()
+
+		this.list = new Proxy(list, {
+			set(target: any, key, val) {
+				target[key] = val
+				save()
+				return true
+			}
+		})
+	}
+
 	load() {
+		// TODO 这里要注意设置的时候会触发proxy
+	}
+
+	save(): any {
+	}
+
+	clear() {
+		this.list = []
 	}
 
 	add(mark: VimBookMark) {
@@ -128,11 +147,12 @@ class VimBookMark {
 		pos: PosType
 	}
 
-	constructor(id: string, textEdit: vscode.TextEditor) {
+	constructor(id: string, textEdit: vscode.TextEditor, desc = "") {
 		let pos = getCursorPosition(textEdit)
 		this.data = {
 			id: id,
 			pos: pos,
+			desc: desc
 		}
 	}
 
@@ -152,7 +172,7 @@ class VimBookMark {
 	get label() {
 		let { id, pos, desc } = this.data
 		if (desc) {
-			desc = desc + ":"
+			desc = `[${desc}]->`
 		} else {
 			desc = ""
 		}
@@ -191,7 +211,6 @@ class QuickBase {
 	setHandle(callback: quickCallbackType) {
 		this.qui.onDidChangeSelection((e) => {
 			callback.select && callback.select(e)
-			this.qui.value = ""
 			this.qui.hide()
 		})
 
@@ -199,7 +218,6 @@ class QuickBase {
 			e = e.trim()
 			if (this.charLimit && e.length >= this.charLimit) {
 				callback.changeValue && e && callback.changeValue(e)
-				this.qui.value = ""
 				this.qui.hide()
 			}
 		})
@@ -208,7 +226,6 @@ class QuickBase {
 			if (this.qui.value.trim()) {
 				callback.changeValue && callback.changeValue(this.qui.value)
 			}
-			this.qui.value = " "
 			this.qui.hide()
 		})
 
@@ -265,7 +282,7 @@ class Str extends String {
 
 // 获取当前光标所在位置
 function getCursorPosition(textEdit: vscode.TextEditor): PosType {
-	let workspaceRootPath = formatPath(vscode.workspace.getWorkspaceFolder(textEdit.document.uri)?.uri.path)
+	let workspaceRootPath = new Str(formatPath(vscode.workspace.getWorkspaceFolder(textEdit.document.uri)?.uri.path)).ltrim("/").toString()
 	let filePath = formatPath(textEdit.document.fileName)
 	let ac = textEdit.selection.active
 	let relativePath = new Str(filePath.replace(workspaceRootPath, "")).ltrim("/").toString()
