@@ -7,6 +7,7 @@ interface ChangeValueHandle {
 type quickCallbackType = {
 	changeValue?(val: string): void
 	select?(val: any): void
+	accpet?(val: any): void
 }
 
 type QuickPickOptionType = {
@@ -34,7 +35,7 @@ export function activate(context: vscode.ExtensionContext) {
 							vscode.window.setStatusBarMessage(`不能使用${id}作为标记ID`, 2000)
 						} else {
 							quickMarkDesc.setHandle({
-								changeValue(desc) {
+								accpet(desc) {
 									vimBookMarkMg.add(new VimBookMark(id, textEdit, desc))
 								}
 							}).show()
@@ -223,9 +224,7 @@ class QuickBase {
 		})
 
 		this.qui.onDidAccept(() => {
-			if (this.qui.value.trim()) {
-				callback.changeValue && callback.changeValue(this.qui.value)
-			}
+			callback.accpet && callback.accpet(this.qui.value.trim())
 			this.qui.hide()
 		})
 
