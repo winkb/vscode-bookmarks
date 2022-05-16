@@ -27,6 +27,9 @@
 }
 ```
 
+![ img ](./src/source/showme.gif)
+
+
 ## 所有命令
 
 命令ID |  描述
