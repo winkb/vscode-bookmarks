@@ -43,12 +43,12 @@ export class VimBookMarkManager {
     }
 
     save(): any {
-        console.log("@ -> file: mark.ts -> line 48 -> VimBookMarkManager -> save -> this.list", this.list);
+        console.log("@ -> file: mark.ts -> line 48 -> VimBookMarkManager -> save -> this.list.length", this.list.length);
         this.store.setValue(VimBookMarkManager.dbKey, this.list)
     }
 
     clear() {
-        this.list = []
+        this.list.length = 0
     }
 
     add(mark: VimBookMark) {

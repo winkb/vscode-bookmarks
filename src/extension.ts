@@ -53,8 +53,10 @@ export function activate(context: vscode.ExtensionContext) {
 	)
 
 	context.subscriptions.push(vscode.commands.registerTextEditorCommand('bo.vimBookMarkClear', (textEdit) => {
+		// 1.先把所有的装饰取消掉,然后才能清空mg对象
+		decration.clear(textEdit)
+		// 2. 清空mark list数据
 		vimBookMarkMg.clear()
-		decration.refresh(textEdit)
 	}));
 
 	context.subscriptions.push(vscode.commands.registerTextEditorCommand("bo.vimBookMarkRefresh", (textEdit) => {

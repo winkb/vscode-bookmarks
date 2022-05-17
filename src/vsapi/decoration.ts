@@ -62,6 +62,16 @@ export class Decoration {
         })
     }
 
+    clear(textEdit: vscode.TextEditor) {
+        // 组合成rang
+        let pos = getCursorPosition(textEdit)
+        let group = this.mg.getGroupById(pos.filePath)
+
+        Object.keys(group).map((k) => {
+            textEdit.setDecorations(this.getDecorationOption(k).type, [])
+        })
+    }
+
     getDecorationOption(id: string) {
         let theOption = this.list[id]
         if (!theOption) {
