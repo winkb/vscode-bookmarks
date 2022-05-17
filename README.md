@@ -39,5 +39,3 @@ bo.vimBookMarkClear | 清除所有的标记
 
 ## todo
 
-1. 在文件标记位置增加图标(对应英文字母的icon)
-2. 标记持久化

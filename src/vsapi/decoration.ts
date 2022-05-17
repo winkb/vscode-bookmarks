@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as core from '../core/mark';
+import { svgDefault, svgs } from './svg';
 import { getCursorPosition } from './vsapi';
 
 type vscodeDecoOptionType = {
@@ -21,20 +22,26 @@ export class Decoration {
     static defaultKey = "a"
     list: { [key: string]: vscodeDecoOptionType }
     mg: core.VimBookMarkManager
-
+    svgs: { [key: string]: Function } = {}
     constructor(mg: core.VimBookMarkManager) {
         const blue = '#157EFB';
         const green = '#2FCE7C';
         const purple = '#C679E0';
         const red = '#F44336';
         const yellow = '#c46f23';
-        this.list = {
-            "a": this._getDecorationDefaultStyle(blue),
-            "b": this._getDecorationDefaultStyle(red),
-            "c": this._getDecorationDefaultStyle(yellow),
-            "d": this._getDecorationDefaultStyle(green),
-            "e": this._getDecorationDefaultStyle(purple)
-        };
+        const colors: { [key: string]: string } = {
+            "a": blue,
+            "b": red,
+            "c": green,
+            "d": yellow,
+            "e": purple
+        }
+
+        this.svgs = svgs
+
+        this.list = Object.keys(colors).reduce((p, key) => {
+            return { ...p, [key]: this._getDecorationDefaultStyle(key, colors[key]) }
+        }, {})
 
         this.mg = mg
     }
@@ -77,10 +84,23 @@ export class Decoration {
     }
 
     _getBookmarkDataUri(color: string) {
+
         return vscode.Uri.parse(
             "data:image/svg+xml," +
-            encodeURIComponent(`<svg version="1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" enable-background="new 0 0 48 48"><path fill="${color}" d="M37,43l-13-6l-13,6V9c0-2.2,1.8-4,4-4h18c2.2,0,4,1.8,4,4V43z"/></svg>`)
+            encodeURIComponent(svgDefault(color))
         );
+    }
+
+    // 如果有对应的字母图标,使用字母图标,否则使用默认图标
+    _getBookmarkDataUriDiffId(id: string, color: string): vscode.Uri {
+        if (!this.svgs[id]) {
+            return this._getBookmarkDataUri(color)
+        }
+
+        return vscode.Uri.parse(
+            "data:image/svg+xml," +
+            encodeURIComponent(this.svgs[id](color))
+        )
     }
 
     _getDecorationStyle(decoOptions: decoOptionType) {
@@ -88,9 +108,9 @@ export class Decoration {
         return { type: vscode.window.createTextEditorDecorationType(decoOptions), options: decoOptions };
     }
 
-    _getDecorationDefaultStyle(color: string) {
+    _getDecorationDefaultStyle(id: string, color: string) {
         return this._getDecorationStyle({
-            "gutterIconPath": this._getBookmarkDataUri(color),
+            "gutterIconPath": this._getBookmarkDataUriDiffId(id, color),
             "overviewRulerColor": color + "B0",   // this is safe/suitable for the defaults only.  Custom ruler color is handled below.
             "light": {
                 "fontWeight": "bold"
