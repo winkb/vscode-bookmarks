@@ -1,14 +1,17 @@
 import * as vscode from "vscode"
 import * as vsapi from "../vsapi/vsapi"
 import { LocalStorageService } from "../vsapi/store"
+import { Decoration } from "../vsapi/decoration"
 
 export class VimBookMarkManager {
     list: VimBookMark[] = []
     store: LocalStorageService
+    decration!: Decoration
     static dbKey = "bo.VimBookMarkManager"
 
-    constructor(store: LocalStorageService) {
+    constructor(store: LocalStorageService, decration: Decoration) {
         this.store = store
+        this.decration = decration
     }
 
     load(callback: Function) {
@@ -33,13 +36,8 @@ export class VimBookMarkManager {
         return this
     }
 
-    getGroupById(filePath: string): { [key: string]: VimBookMark[] } {
-        return this.list.filter(v => v.filePath == filePath).reduce((p: any, v) => {
-            let theKey = v.id
-            p[theKey] = p[theKey] || []
-            p[theKey].push(v)
-            return p
-        }, {})
+    filterByPath(filePath: string): VimBookMark[] {
+        return this.list.filter(v => v.filePath == filePath)
     }
 
     save(): any {
@@ -47,18 +45,37 @@ export class VimBookMarkManager {
         this.store.setValue(VimBookMarkManager.dbKey, this.list)
     }
 
-    clear() {
+    clear(textEdit: vscode.TextEditor) {
+        // 1
+        this.decration.clear(textEdit)
+        // 2
         this.list.length = 0
     }
 
-    add(mark: VimBookMark) {
+    delete(textEdit: vscode.TextEditor, find: VimBookMark) {
+        // 1
+        this.decration.remove(textEdit, find)
+
+        // 2
+        this.list.forEach((v, i) => {
+            if (v.pos.filePath == find.pos.filePath) {
+                this.list.splice(i, 1)
+            }
+        })
+    }
+
+    add(mark: VimBookMark, textEdit: vscode.TextEditor) {
         this.list.forEach((v, i) => {
             if (v.id == mark.id) {
                 this.list.splice(i, 1)
             }
         })
 
+        // 1
         this.list.unshift(mark)
+
+        // 2
+        this.decration.refresh(textEdit)
     }
 
     get(textEd: vscode.TextEditor) {

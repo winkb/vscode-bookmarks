@@ -22,9 +22,10 @@ export class Decoration {
     // 如果没有设置,就使用此项去装饰
     static defaultKey = "0"
     list: { [key: string]: vscodeDecoOptionType }
-    mg: core.VimBookMarkManager
+    mg!: core.VimBookMarkManager
+    /**  key => mark.id abc...  */
     svgs: { [key: string]: Function } = {}
-    constructor(mg: core.VimBookMarkManager) {
+    constructor() {
         const blue = '#157EFB';
         const green = '#2FCE7C';
         const purple = '#C679E0';
@@ -44,33 +45,81 @@ export class Decoration {
         this.list = Object.keys(colors).reduce((p, key) => {
             return { ...p, [key]: this._getDecorationDefaultStyle(key, colors[key]) }
         }, {})
+    }
 
+    setMg(mg: core.VimBookMarkManager) {
         this.mg = mg
     }
 
     refresh(textEdit: vscode.TextEditor) {
         // 组合成rang
         let pos = getCursorPosition(textEdit)
-        let group = this.mg.getGroupById(pos.filePath)
-        let groupRange: { [key: string]: vscode.Range[] } = {}
+        // a => VimMark  b => VimMark
+        let markList = this.mg.filterByPath(pos.filePath)
+        let styleKeyTypeGroup: {
+            [key: string]: {
+                styleOption: vscodeDecoOptionType,
+                marks: core.VimBookMark[],
+            }
+        } = {}
 
-        Object.keys(group).map((k) => {
-            const list = group[k];
-            groupRange[k] = list.map(v => Decoration.positionToRange(v.pos))
+        markList.map((v) => {
+            let styleOption = this.getDecorationOption(v.id)
+            if (!styleKeyTypeGroup[styleOption.type.key]) {
+                styleKeyTypeGroup[styleOption.type.key] = {
+                    "styleOption": styleOption,
+                    marks: []
+                }
+            }
+            styleKeyTypeGroup[styleOption.type.key].marks.push(v)
         })
 
-        Object.keys(groupRange).map(key => {
-            textEdit.setDecorations(this.getDecorationOption(key).type, groupRange[key])
+        Object.keys(styleKeyTypeGroup).map(key => {
+            let v = styleKeyTypeGroup[key]
+            let styleOption = v.styleOption
+
+            const rangers = v.marks.reduce((p: vscode.Range[], v) => {
+                p.push(Decoration.positionToRange(v.pos))
+                return p
+            }, [])
+
+            textEdit.setDecorations(styleOption.type, rangers)
         })
     }
 
-    clear(textEdit: vscode.TextEditor) {
-        // 组合成rang
+    remove(textEdit: vscode.TextEditor, mark: core.VimBookMark) {
         let pos = getCursorPosition(textEdit)
-        let group = this.mg.getGroupById(pos.filePath)
+        let group = this.mg.filterByPath(pos.filePath)
+        let find = group.find(v => v.pos.lineIndex == mark.pos.lineIndex)
+        if (!find) {
+            return
+        }
+        let styleOption = this.getDecorationOption(find.id)
+        let ranges: vscode.Range[] = []
 
-        Object.keys(group).map((k) => {
-            textEdit.setDecorations(this.getDecorationOption(k).type, [])
+        group.forEach(vm => {
+            if (vm.id != mark.id) {
+                ranges.push(Decoration.positionToRange(vm.pos))
+            }
+        })
+
+        textEdit.setDecorations(styleOption.type, ranges)
+    }
+
+    clear(textEdit: vscode.TextEditor) {
+        let pos = getCursorPosition(textEdit)
+        let markList = this.mg.filterByPath(pos.filePath)
+        // 依据装饰符号的key做一个分组
+        let styleKeyTypeGroup = markList.reduce((p: { [key: string]: vscodeDecoOptionType }, mark) => {
+            let styleOption = this.getDecorationOption(mark.id)
+            if (!p[styleOption.type.key]) [
+                p[styleOption.type.key] = styleOption
+            ]
+            return p
+        }, {})
+
+        Object.keys(styleKeyTypeGroup).map((key) => {
+            textEdit.setDecorations(styleKeyTypeGroup[key].type, [])
         })
     }
 

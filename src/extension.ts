@@ -6,38 +6,30 @@ import { LocalStorageService } from './vsapi/store';
 
 
 export function activate(context: vscode.ExtensionContext) {
-	let vimBookMarkMg = new VimBookMarkManager(new LocalStorageService(context.workspaceState))
-	let decration = new Decoration(vimBookMarkMg)
+	let decration = new Decoration()
+	let vimBookMarkMg = new VimBookMarkManager(new LocalStorageService(context.workspaceState), decration)
+	let specilaKey = [
+		{
+			id: "n",
+			command: "bo.vimBookMarkAdd"
+		},
+		{
+			id: "r",
+			command: "bo.vimBookMarkDelete"
+		}
+	]
+
+	// important
+	decration.setMg(vimBookMarkMg)
 
 	context.subscriptions.push(
 		vscode.commands.registerTextEditorCommand('bo.vimBookMarkTrigger', (textEdit) => {
-			let quickMarkTrigger = QuickBase.create({ placehoder: "输入n新增,其他跳转", charLimit: 1 })
-			let quickMarkEditor = QuickBase.create({ placehoder: "输入mark name", charLimit: 1 })
-			let quickMarkDesc = QuickBase.create({ placehoder: "输入备忘描述" })
-			let specialKeys: { [key: string]: ChangeValueHandle } = {
-				"n": () => {
-					quickMarkEditor.setHandle({
-						changeValue(id) {
-							if (specialKeys[id.charAt(0)]) {
-								vscode.window.showErrorMessage(`不能使用${id}作为标记ID`)
-							} else {
-								quickMarkDesc.setHandle({
-									accpet(desc) {
-										vimBookMarkMg.add(VimBookMark.create(id, textEdit, desc))
-										decration.refresh(textEdit)
-									}
-								}).show()
-							}
-						}
-					}).show()
-				},
-			}
-
+			let quickMarkTrigger = QuickBase.create({ placehoder: "输入n新增,r删除,其他跳转", charLimit: 1 })
 			quickMarkTrigger.setHandle({
 				changeValue(char) {
-					const h = specialKeys[char]
-					if (h) {
-						h(char)
+					let target = specilaKey.find((v) => v.id == char)
+					if (target) {
+						vscode.commands.executeCommand(target.command)
 					} else {
 						// 跳转 mark
 						vimBookMarkMg.goTo(char)
@@ -52,11 +44,36 @@ export function activate(context: vscode.ExtensionContext) {
 		})
 	)
 
+	context.subscriptions.push(vscode.commands.registerTextEditorCommand("bo.vimBookMarkDelete", (textEdit) => {
+		let find = vimBookMarkMg.get(textEdit)
+		if (find) {
+			vimBookMarkMg.delete(textEdit, find)
+		}
+	}));
+
+	context.subscriptions.push(vscode.commands.registerTextEditorCommand("bo.vimBookMarkAdd", (textEdit) => {
+		let quickMarkEditor = QuickBase.create({ placehoder: "输入mark name", charLimit: 1 })
+		let quickMarkDesc = QuickBase.create({ placehoder: "输入备忘描述" })
+
+		quickMarkEditor.setHandle({
+			changeValue(id) {
+				if (specilaKey.some(v => v.id == id.charAt(0))) {
+					vscode.window.showErrorMessage(`不能使用${id}作为标记ID`)
+				} else {
+					quickMarkDesc.setHandle({
+						accpet(desc) {
+							vimBookMarkMg.add(VimBookMark.create(id, textEdit, desc), textEdit)
+						}
+					}).show()
+				}
+			}
+		}).show()
+	}));
+
 	context.subscriptions.push(vscode.commands.registerTextEditorCommand('bo.vimBookMarkClear', (textEdit) => {
 		// 1.先把所有的装饰取消掉,然后才能清空mg对象
-		decration.clear(textEdit)
 		// 2. 清空mark list数据
-		vimBookMarkMg.clear()
+		vimBookMarkMg.clear(textEdit)
 	}));
 
 	context.subscriptions.push(vscode.commands.registerTextEditorCommand("bo.vimBookMarkRefresh", (textEdit) => {
