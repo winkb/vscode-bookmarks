@@ -5,8 +5,8 @@ interface ChangeValueHandle {
 type PosType = {
     relativePath: string
     filePath: string
-    lineNum: number
-    charNum: number
+    lineIndex: number
+    charIndex: number
 }
 
 type quickCallbackType = {

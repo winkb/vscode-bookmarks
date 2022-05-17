@@ -2,7 +2,9 @@
 	"name": "vimbookmark",
 	"displayName": "vimbookmark",
 	"description": "更适合vim的Mark功能。",
+	"publisher": "bo",
 	"repository": {
+		"type": "git",
 		"url": "https://github.com/winkb/vscode-bookmarks"
 	},
 	"version": "0.0.1",
@@ -13,8 +15,8 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:bo.vimBookMarkTrigger",
-		"onCommand:bo.vimBookMarkClear"
+		"*",
+		"onCommand:bo.vimBookMarkTrigger"
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
@@ -26,6 +28,10 @@
 			{
 				"command": "bo.vimBookMarkClear",
 				"title": "vimBookMarkClear"
+			},
+			{
+				"command": "bo.vimBookMarkRefresh",
+				"title": "vimBookMarkRefresh"
 			}
 		]
 	},

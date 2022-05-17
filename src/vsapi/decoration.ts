@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+import * as core from '../core/mark';
+import { getCursorPosition } from './vsapi';
 
 type vscodeDecoOptionType = {
     type: vscode.TextEditorDecorationType;
@@ -18,19 +20,51 @@ type decoOptionType = {
 export class Decoration {
     static defaultKey = "a"
     list: { [key: string]: vscodeDecoOptionType }
+    mg: core.VimBookMarkManager
 
-    constructor() {
+    constructor(mg: core.VimBookMarkManager) {
         const blue = '#157EFB';
         const green = '#2FCE7C';
         const purple = '#C679E0';
         const red = '#F44336';
+        const yellow = '#c46f23';
         this.list = {
             "a": this._getDecorationDefaultStyle(blue),
             "b": this._getDecorationDefaultStyle(red),
-            "c": this._getDecorationDefaultStyle(blue),
-            "e": this._getDecorationDefaultStyle(green),
-            "f": this._getDecorationDefaultStyle(purple)
+            "c": this._getDecorationDefaultStyle(yellow),
+            "d": this._getDecorationDefaultStyle(green),
+            "e": this._getDecorationDefaultStyle(purple)
         };
+
+        this.mg = mg
+    }
+
+    refresh(textEdit: vscode.TextEditor) {
+        // 组合成rang
+        let pos = getCursorPosition(textEdit)
+        let group = this.mg.getGroupById(pos.filePath)
+        let groupRange: { [key: string]: vscode.Range[] } = {}
+
+        Object.keys(group).map((k) => {
+            const list = group[k];
+            groupRange[k] = list.map(v => Decoration.positionToRange(v.pos))
+        })
+
+        Object.keys(groupRange).map(key => {
+            textEdit.setDecorations(this.getDecorationOption(key).type, groupRange[key])
+        })
+    }
+
+    getDecorationOption(id: string) {
+        let theOption = this.list[id]
+        if (!theOption) {
+            theOption = this.list[Decoration.defaultKey]
+        }
+        return theOption
+    }
+
+    static positionToRange(pos: PosType) {
+        return new vscode.Range(new vscode.Position(pos.lineIndex, 0), new vscode.Position(pos.lineIndex, pos.charIndex))
     }
 
     setDecorations(textEdit: vscode.TextEditor, id: string, rangers: vscode.Range[]) {
