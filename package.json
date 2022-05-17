@@ -15,7 +15,7 @@
 		"Other"
 	],
 	"activationEvents": [
-		"*",
+		"onStartupFinished",
 		"onCommand:bo.vimBookMarkTrigger"
 	],
 	"main": "./dist/extension.js",
