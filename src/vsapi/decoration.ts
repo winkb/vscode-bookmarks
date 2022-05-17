@@ -19,7 +19,8 @@ type decoOptionType = {
 }
 
 export class Decoration {
-    static defaultKey = "a"
+    // 如果没有设置,就使用此项去装饰
+    static defaultKey = "0"
     list: { [key: string]: vscodeDecoOptionType }
     mg: core.VimBookMarkManager
     svgs: { [key: string]: Function } = {}
@@ -30,6 +31,7 @@ export class Decoration {
         const red = '#F44336';
         const yellow = '#c46f23';
         const colors: { [key: string]: string } = {
+            "0": red,
             "a": blue,
             "b": red,
             "c": green,
