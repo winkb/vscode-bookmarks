@@ -8,7 +8,8 @@
 ##  默认快捷键
 
 - m+n 新增标记
-- m+[^n] 跳转到对应的标记位置
+- m+r 取消标记
+- m+[*] 跳转到对应的标记位置
 
 
 请将下面代码复制到settings
@@ -36,6 +37,9 @@
 -----------|----
 bo.vimBookMarkTrigger | 跳转到标记/新增标记
 bo.vimBookMarkClear | 清除所有的标记
+bo.vimBookMarkAdd | 新增标记
+bo.vimBookMarkDelete | 取消标记
+bo.vimBookMarkRefresh | 刷新标记
 
 ## todo
 

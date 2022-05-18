@@ -2,7 +2,8 @@
 	"name": "vimbookmark",
 	"displayName": "vimbookmark",
 	"description": "更适合vim的Mark功能。",
-	"publisher": "bo",
+	"publisher": "vimbookmarks",
+	"icon": "images/icon.png",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/winkb/vscode-bookmarks"
