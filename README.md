@@ -1,18 +1,25 @@
-#  vim Mark 标记插件
-
-相比于vim自带的标记功能，增加了标记列表可视化的能力，只需要按下m键，就可以查看有哪些标记过的文件。
-
-
-`此插件依赖vscode vim插件`
-
-##  默认快捷键
-
-- m+n 新增标记
-- m+r 取消标记
-- m+[*] 跳转到对应的标记位置
+## bookmarksJump是什么
+顾名思义,他就是帮助你记忆并且迅速跳转到热点位置的工具
 
 
-请将下面代码复制到settings
+##  Mark 标记插件的优势
+
+1. 相比于vim自带的mark，标记更明显!标记可筛选!跨文件跳转! 功能一体化!仅需要记忆一个m键
+2. 随手定义备忘描述,这是我很需要的功能,然而其他同类型插件不提供或者很繁琐
+3. 即使不用vim,也只需要配置简单的快捷键获得同样的能力
+
+
+![ img ](./src/source/showme.gif)
+
+##  默认动作
+
+- {triggerKey}+n 新增标记
+- {triggerKey}+r 取消标记
+- {triggerKey}+[字母] 跳转到对应的标记位置
+
+### 如果你使用了vim
+
+请将下面代码复制到settings,这段代码将triggerKey设置成了m键
 ```json
 {
     "vim.normalModeKeyBindingsNonRecursive":[
@@ -28,7 +35,17 @@
 }
 ```
 
-![ img ](./src/source/showme.gif)
+### 如果你不使用vim
+
+请将下面代码复制到keybindings.json,这段代码将triggerKey设置成了ctrl+m键
+```json
+{
+    "key": "ctrl+m",
+    "command": "bo.vimBookMarkTrigger",
+    "when": "editorTextFocus"
+}
+```
+
 
 
 ## 所有命令
@@ -43,3 +60,4 @@ bo.vimBookMarkRefresh | 刷新标记
 
 ## todo
 
+1. 可配置化

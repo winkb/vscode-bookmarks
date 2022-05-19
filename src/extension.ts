@@ -24,7 +24,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(
 		vscode.commands.registerTextEditorCommand('bo.vimBookMarkTrigger', (textEdit) => {
-			let quickMarkTrigger = QuickBase.create({ placehoder: "输入n新增,r删除,其他跳转", charLimit: 1 })
+			let quickMarkTrigger = QuickBase.create({ placehoder: "n新增,r删除,其他跳转", charLimit: 1 })
 			quickMarkTrigger.setHandle({
 				changeValue(char) {
 					let target = specilaKey.find((v) => v.id == char)
