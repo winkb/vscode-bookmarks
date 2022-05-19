@@ -62,7 +62,7 @@ export function activate(context: vscode.ExtensionContext) {
 				} else {
 					quickMarkDesc.setHandle({
 						accpet(desc) {
-							vimBookMarkMg.add(VimBookMark.create(id, textEdit, desc), textEdit)
+							vimBookMarkMg.addOrUpdate(VimBookMark.create(id, textEdit, desc), textEdit)
 						}
 					}).show()
 				}

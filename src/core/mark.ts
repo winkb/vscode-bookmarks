@@ -64,8 +64,16 @@ export class VimBookMarkManager {
         })
     }
 
-    add(mark: VimBookMark, textEdit: vscode.TextEditor) {
+    addOrUpdate(mark: VimBookMark, textEdit: vscode.TextEditor) {
+        //   删除当前行已存在的标签
+        let findIndex = this.list.findIndex(v => v.isSameLine(mark))
+        if (findIndex != -1) {
+            this.decration.remove(textEdit, this.list[findIndex])
+            this.list.splice(findIndex, 1)
+        }
+
         this.list.forEach((v, i) => {
+            //  删除相同名称的标签
             if (v.id == mark.id) {
                 this.list.splice(i, 1)
             }
@@ -137,6 +145,14 @@ export class VimBookMark {
 
     setDesc(desc: string) {
         this.data.desc = desc
+    }
+
+    isSameLine(newMark: VimBookMark) {
+        return this.filePath == newMark.filePath && this.line == newMark.line
+    }
+
+    get line() {
+        return this.pos.lineIndex
     }
 
     get filePath() {
