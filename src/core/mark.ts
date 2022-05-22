@@ -41,7 +41,6 @@ export class VimBookMarkManager {
     }
 
     save(): any {
-        console.log("@ -> file: mark.ts -> line 48 -> VimBookMarkManager -> save -> this.list.length", this.list.length);
         this.store.setValue(VimBookMarkManager.dbKey, this.list)
     }
 
@@ -58,7 +57,7 @@ export class VimBookMarkManager {
 
         // 2
         this.list.forEach((v, i) => {
-            if (v.pos.filePath == find.pos.filePath) {
+            if (v.isSameLine(find)) {
                 this.list.splice(i, 1)
             }
         })
@@ -68,22 +67,31 @@ export class VimBookMarkManager {
         //   删除当前行已存在的标签
         let findIndex = this.list.findIndex(v => v.isSameLine(mark))
         if (findIndex != -1) {
-            this.decration.remove(textEdit, this.list[findIndex])
-            this.list.splice(findIndex, 1)
+            let find = this.list[findIndex]
+
+            // 1 修改老的标记信息
+            this.decration.remove(textEdit, find)
+            // 赋值新的标记信息
+            find.assign(mark, true)
+            this.list.splice(findIndex, 1, find)
+        } else {
+            this.list.forEach((v, i) => {
+                //  删除相同名称的标签
+                if (v.id == mark.id) {
+                    this.list.splice(i, 1)
+                }
+            })
+
+            // 1
+            this.list.unshift(mark)
         }
-
-        this.list.forEach((v, i) => {
-            //  删除相同名称的标签
-            if (v.id == mark.id) {
-                this.list.splice(i, 1)
-            }
-        })
-
-        // 1
-        this.list.unshift(mark)
 
         // 2
         this.decration.refresh(textEdit)
+    }
+
+    has(id: string) {
+        return this.list.some(v => v.id == id)
     }
 
     get(textEd: vscode.TextEditor) {
@@ -138,6 +146,17 @@ export class VimBookMark {
         }
     }
 
+    assign(mark: VimBookMark, ignoreEmpty: boolean) {
+        this.data.id = mark.id
+        this.data.pos = mark.pos
+        let desc = mark.desc
+        if (ignoreEmpty) {
+            this.data.desc = desc || this.data.desc
+        } else {
+            this.data.desc = desc
+        }
+    }
+
     jumpToTheLocation() {
         let { filePath, lineIndex: lineNum, charIndex: charNum } = this.data.pos
         vsapi.goToLocation(filePath, lineNum, charNum)
@@ -157,6 +176,10 @@ export class VimBookMark {
 
     get filePath() {
         return this.pos.filePath
+    }
+
+    get desc() {
+        return this.data.desc
     }
 
     get pos() {

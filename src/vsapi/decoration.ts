@@ -32,12 +32,13 @@ export class Decoration {
         const red = '#F44336';
         const yellow = '#c46f23';
         const colors: { [key: string]: string } = {
-            "0": red,
+            "0": blue,
             "a": blue,
-            "b": red,
+            "b": blue,
             "c": green,
             "d": yellow,
-            "e": purple
+            "e": purple,
+            "m": red,
         }
 
         this.svgs = svgs
@@ -87,19 +88,22 @@ export class Decoration {
         })
     }
 
-    remove(textEdit: vscode.TextEditor, mark: core.VimBookMark) {
+    remove(textEdit: vscode.TextEditor, find: core.VimBookMark) {
         let pos = getCursorPosition(textEdit)
         let group = this.mg.filterByPath(pos.filePath)
-        let find = group.find(v => v.pos.lineIndex == mark.pos.lineIndex)
         if (!find) {
             return
         }
         let styleOption = this.getDecorationOption(find.id)
         let ranges: vscode.Range[] = []
 
+        // 重新设置和删除key一样的装饰，不仅仅是设置当前删除的行
         group.forEach(vm => {
-            if (vm.id != mark.id) {
-                ranges.push(Decoration.positionToRange(vm.pos))
+            if (vm.id != find.id) {
+                let thisOption = this.getDecorationOption(vm.id)
+                if (thisOption.type.key == styleOption.type.key) {
+                    ranges.push(Decoration.positionToRange(vm.pos))
+                }
             }
         })
 

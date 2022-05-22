@@ -18,6 +18,10 @@ export class QuickBase {
         this.qui.items = []
     }
 
+    setPlaceholder(placeholder: string) {
+        this.qui.placeholder = placeholder
+    }
+
     setHandle(callback: quickCallbackType) {
         this.qui.onDidChangeSelection((e) => {
             callback.select && callback.select(e)

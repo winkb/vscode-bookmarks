@@ -15,6 +15,7 @@
 
 - {triggerKey}+n 新增标记
 - {triggerKey}+r 取消标记
+- {triggerKey}+m 增加临时热点标记,不需要填写备注
 - {triggerKey}+[字母] 跳转到对应的标记位置
 
 ### 如果你使用了vim

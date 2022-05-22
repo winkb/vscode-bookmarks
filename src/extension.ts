@@ -24,12 +24,18 @@ export function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(
 		vscode.commands.registerTextEditorCommand('bo.vimBookMarkTrigger', (textEdit) => {
-			let quickMarkTrigger = QuickBase.create({ placehoder: "n新增,r删除,其他跳转", charLimit: 1 })
+			let quickMarkTrigger = QuickBase.create({ placehoder: "m热点,n新增,r删除,其他跳转", charLimit: 1 })
 			quickMarkTrigger.setHandle({
 				changeValue(char) {
 					let target = specilaKey.find((v) => v.id == char)
 					if (target) {
 						vscode.commands.executeCommand(target.command)
+					} else if (char == "m") {
+						if (vimBookMarkMg.has(char)) {
+							vimBookMarkMg.goTo(char)
+						} else {
+							vimBookMarkMg.addOrUpdate(VimBookMark.create(char, textEdit, "临时热点"), textEdit)
+						}
 					} else {
 						// 跳转 mark
 						vimBookMarkMg.goTo(char)
@@ -60,6 +66,14 @@ export function activate(context: vscode.ExtensionContext) {
 				if (specilaKey.some(v => v.id == id.charAt(0))) {
 					vscode.window.showErrorMessage(`不能使用${id}作为标记ID`)
 				} else {
+					let curLineOldMark = vimBookMarkMg.get(textEdit)
+					let placehoder = "输入备忘描述"
+					if (curLineOldMark) {
+						placehoder = curLineOldMark.desc || placehoder
+					}
+
+					quickMarkDesc.setPlaceholder(placehoder)
+
 					quickMarkDesc.setHandle({
 						accpet(desc) {
 							vimBookMarkMg.addOrUpdate(VimBookMark.create(id, textEdit, desc), textEdit)
@@ -92,6 +106,12 @@ export function activate(context: vscode.ExtensionContext) {
 		let uriPath = textEdit?.document.uri.path
 		console.log("@ -> file: extension.ts -> line 67 -> vscode.window.onDidChangeActiveTextEditor -> uriPath", uriPath);
 		onDidActive(textEdit)
+	}, null, context.subscriptions)
+
+	vscode.workspace.onDidSaveTextDocument((e) => {
+		let uriPath = e.uri.path
+		console.log("@ -> file: extension.ts -> line 113 -> vscode.workspace.onDidSaveTextDocument -> uriPath", uriPath);
+		onDidActive(vscode.window.activeTextEditor)
 	}, null, context.subscriptions)
 
 
