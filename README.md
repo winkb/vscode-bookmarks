@@ -13,7 +13,8 @@
 
 ##  默认动作
 
-- {triggerKey}+n 新增标记
+- {triggerKey}+n 新增标记(需要输入描述)
+- {triggerKey}+N 新增标记(不需要输入描述)
 - {triggerKey}+r 取消标记
 - {triggerKey}+m 增加临时热点标记,不需要填写备注
 - {triggerKey}+[字母] 跳转到对应的标记位置
@@ -25,12 +26,27 @@
 {
     "vim.normalModeKeyBindingsNonRecursive":[
         {
-            "before":[
-                "m"
-            ],
-            "commands":[
-                "bo.vimBookMarkTrigger"
-            ]
+            "before":[ "m" ],
+            "commands":[ "bo.vimBookMarkTrigger" ]
+        }
+    ]
+}
+```
+模仿vim的原生标签操作，可以设置如下
+```json
+{
+    "vim.normalModeKeyBindingsNonRecursive":[
+        {
+            "before":[ "m" ],
+            "commands":[ "bo.vimBookMarkAddWithoutComment" ]
+        },
+        {
+            "before":[ "`" ],
+            "commands":[ "bo.vimBookMarkTrigger" ]
+        },
+        {
+            "before":[ "<C-m>" ],
+            "commands":[ "bo.vimBookMarkAdd" ]
         }
     ]
 }
@@ -55,7 +71,8 @@
 -----------|----
 bo.vimBookMarkTrigger | 跳转到标记/新增标记
 bo.vimBookMarkClear | 清除所有的标记
-bo.vimBookMarkAdd | 新增标记
+bo.vimBookMarkAdd | 新增标记(需要输入描述)
+bo.vimBookMarkAddWithoutComment | 新增标记(不需要输入描述)
 bo.vimBookMarkDelete | 取消标记
 bo.vimBookMarkRefresh | 刷新标记
 
