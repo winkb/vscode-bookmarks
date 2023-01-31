@@ -14,6 +14,10 @@ export function activate(context: vscode.ExtensionContext) {
 			command: "bo.vimBookMarkAdd"
 		},
 		{
+			id: "N",
+			command: "bo.vimBookMarkAddWithoutComment"
+		},
+		{
 			id: "r",
 			command: "bo.vimBookMarkDelete"
 		}
@@ -79,6 +83,20 @@ export function activate(context: vscode.ExtensionContext) {
 							vimBookMarkMg.addOrUpdate(VimBookMark.create(id, textEdit, desc), textEdit)
 						}
 					}).show()
+				}
+			}
+		}).show()
+	}));
+
+	context.subscriptions.push(vscode.commands.registerTextEditorCommand("bo.vimBookMarkAddWithoutComment", (textEdit) => {
+		let quickMarkEditor = QuickBase.create({ placehoder: "输入mark name", charLimit: 1 })
+
+		quickMarkEditor.setHandle({
+			changeValue(id) {
+				if (specilaKey.some(v => v.id == id.charAt(0))) {
+					vscode.window.showErrorMessage(`不能使用${id}作为标记ID`)
+				} else {
+					vimBookMarkMg.addOrUpdate(VimBookMark.create(id, textEdit, ""), textEdit)
 				}
 			}
 		}).show()
