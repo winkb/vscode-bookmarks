@@ -31,6 +31,8 @@ export class Decoration {
         const purple = '#C679E0';
         const red = '#F44336';
         const yellow = '#c46f23';
+        const white = '#ffffff';
+        const black = '#000000';
         const colors: { [key: string]: string } = {
             "0": blue,
             "a": blue,
@@ -44,7 +46,7 @@ export class Decoration {
         this.svgs = svgs
 
         this.list = Object.keys(colors).reduce((p, key) => {
-            return { ...p, [key]: this._getDecorationDefaultStyle(key, colors[key]) }
+            return { ...p, [key]: this._getDecorationDefaultStyle(key, white, colors[key]) }
         }, {})
     }
 
@@ -148,23 +150,23 @@ export class Decoration {
         textEdit.setDecorations(theOption.type, rangers)
     }
 
-    _getBookmarkDataUri(color: string) {
+    _getBookmarkDataUri(id: string, idcolor: string, iconcolor: string) {
 
         return vscode.Uri.parse(
             "data:image/svg+xml," +
-            encodeURIComponent(svgDefault(color))
+            encodeURIComponent(svgDefault(id, idcolor, iconcolor))
         );
     }
 
     // 如果有对应的字母图标,使用字母图标,否则使用默认图标
-    _getBookmarkDataUriDiffId(id: string, color: string): vscode.Uri {
+    _getBookmarkDataUriDiffId(id: string, idcolor: string, iconcolor: string): vscode.Uri {
         if (!this.svgs[id]) {
-            return this._getBookmarkDataUri(color)
+            return this._getBookmarkDataUri(id, idcolor, iconcolor)
         }
 
         return vscode.Uri.parse(
             "data:image/svg+xml," +
-            encodeURIComponent(this.svgs[id](color))
+            encodeURIComponent(this.svgs[id](iconcolor))
         )
     }
 
@@ -173,10 +175,10 @@ export class Decoration {
         return { type: vscode.window.createTextEditorDecorationType(decoOptions), options: decoOptions };
     }
 
-    _getDecorationDefaultStyle(id: string, color: string) {
+    _getDecorationDefaultStyle(id: string, idcolor: string, iconcolor: string) {
         return this._getDecorationStyle({
-            "gutterIconPath": this._getBookmarkDataUriDiffId(id, color),
-            "overviewRulerColor": color + "B0",   // this is safe/suitable for the defaults only.  Custom ruler color is handled below.
+            "gutterIconPath": this._getBookmarkDataUriDiffId(id, idcolor, iconcolor),
+            "overviewRulerColor": iconcolor + "B0",   // this is safe/suitable for the defaults only.  Custom ruler color is handled below.
             "light": {
                 "fontWeight": "bold"
             },
